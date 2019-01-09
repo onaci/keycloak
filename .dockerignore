@@ -1,0 +1,9 @@
+.git
+.gitlab-ci.yml
+.build.tools
+.build.properties
+.compose.files
+README.md
+docker-compose.yml
+ensure-build-tools.sh
+

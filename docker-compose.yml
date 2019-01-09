@@ -1,0 +1,163 @@
+#-------------------------------------------------------------------------------
+# Define a dockerised development environment for the ONCAI/KeyCloak component
+#-------------------------------------------------------------------------------
+version: '3.5'
+
+networks:
+  keycloak-internal:
+    internal: true
+    name: keycloak-internal
+
+  keycloak-external:
+    name: keycloak-external
+
+#secrets:
+#  keycloak_dbpass:
+#    file: "./dev_secrets/keycloak_dbpass.txt"
+#  keycloak_superuser:
+#    file: ./dev_secrets/keycloak_superuser.sh
+    
+volumes:
+  postgres_data:   
+ 
+services:
+  traefik:
+    image: traefik:v1.7.2-alpine
+    container_name: traefik
+    networks:
+      - keycloak-external
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./tls:/tls
+    command: [
+      "--api",
+      "--docker",
+      "--debug",
+    ]
+    labels:
+      - traefik.port=8080
+      - traefik.frontend.rule=PathPrefixStrip:/traefik/
+
+  postgresql:
+    container_name: postgresql
+    image: postgres:10.5-alpine
+    networks:
+      - keycloak-internal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./dev_secrets/keycloak_dbpass.txt:/run/secrets/keycloak_dbpass:ro
+#    secrets:
+#      - keycloak_dbpass
+    environment:
+      - POSTGRES_DATABASE=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD_FILE=/run/secrets/keycloak_dbpass
+    entrypoint: "/bin/sh -c"
+    command: "'chown -R postgres:postgres /var/lib/postgresql/data && chmod 777 /var/lib/postgresql/data && docker-entrypoint.sh postgres'"
+        
+  keycloak:
+    container_name: keycloak
+    build: 
+      context: .
+    image: onaci/keycloak
+    depends_on:
+      - postgresql
+      - traefik
+    networks:
+      - keycloak-internal
+      - keycloak-external
+    volumes:
+      - ./realms:/opt/jboss/keycloak/realms
+      - ./theme:/opt/jboss/keycloak/themes/onaci
+      - ./dev_secrets/keycloak_dbpass.txt:/run/secrets/keycloak_dbpass:ro
+      - ./dev_secrets/keycloak_superuser.sh:/run/secrets/keycloak_superuser:ro
+#    secrets:
+#      - keycloak_superuser
+#      - keycloak_dbpass
+    environment:
+      - KEYCLOAK_ENVIRONMENT=/run/secrets/keycloak_superuser
+      - DB_VENDOR=postgres
+      - DB_ADDR=postgresql
+      - DB_PORT=5432
+      - DB_DATABASE=keycloak
+      - DB_USER=keycloak
+      - DB_PASSWORD_FILE=/run/secrets/keycloak_dbpass
+      - PROXY_ADDRESS_FORWARDING=true
+    labels:
+      traefik.docker.network: onacikeycloak_keycloak-external
+      # hello
+      traefik.keycloak-redirect.frontend.rule: PathPrefix:/keycloak
+      traefik.keycloak-redirect.frontend.redirect.regex: "^(.*)://(.*)/keycloak(.*)$$"
+      traefik.keycloak-redirect.frontend.redirect.replacement: "/auth/admin/master/console$$3"
+      traefik.keycloak-redirect.priority: 1 
+       #can ewe ahve a comment here>
+      traefik.keycloak-admin.port: 8080
+      traefik.keycloak-admin.frontend.rule: PathPrefix:/auth/admin
+      traefik.keycloak-admin.frontend.passHostHeader: "true"
+      traefik.keycloak-admin.priority: 2  
+      traefik.keycloak-auth.port: 8080
+      traefik.keycloak-auth.frontend.rule: "PathPrefix:/auth/realms/,/auth/resources/,/auth/js/"
+      traefik.keycloak-auth.frontend.passHostHeader: "true"
+      traefik.keycloak-auth.priority: 3
+  
+  
+  keycloak-export:
+    container_name: keycloak-export
+    image: onaci/keycloak
+    depends_on:
+      - postgresql
+    networks:
+      - keycloak-internal
+    volumes:
+      - ./realms:/opt/jboss/keycloak/realms
+      - ./dev_secrets/keycloak_dbpass.txt:/run/secrets/keycloak_dbpass:ro
+#    secrets:
+#      - keycloak_superuser
+#      - keycloak_dbpass
+    environment:
+      - DB_VENDOR=postgres
+      - DB_ADDR=postgresql
+      - DB_PORT=5432
+      - DB_DATABASE=keycloak
+      - DB_USER=keycloak
+      - DB_PASSWORD_FILE=/run/secrets/keycloak_dbpass
+    command: [
+      "-Dkeycloak.migration.action=export",
+      "-Dkeycloak.migration.realmName=onaci",
+      "-Dkeycloak.migration.provider=dir",
+      "-Dkeycloak.migration.dir=/opt/jboss/keycloak/realms",
+      "-Dkeycloak.migration.usersExportStrategy=SAME_FILE"
+    ]
+
+  keycloak-init:
+    container_name: keycloak-init
+    image: onaci/keycloak
+    depends_on:
+      - postgresql
+#    secrets:
+#      - keycloak_superuser
+#      - keycloak_dbpass
+    networks:
+      - keycloak-internal
+    volumes:
+      - ./realms:/opt/jboss/keycloak/realms
+      - ./dev_secrets/keycloak_dbpass.txt:/run/secrets/keycloak_dbpass:ro
+      - ./dev_secrets/keycloak_superuser.sh:/run/secrets/keycloak_superuser:ro
+    environment:
+      - KEYCLOAK_ENVIRONMENT=/run/secrets/keycloak_superuser
+      - DB_VENDOR=postgres
+      - DB_ADDR=postgresql
+      - DB_PORT=5432
+      - DB_DATABASE=keycloak
+      - DB_USER=keycloak
+      - DB_PASSWORD_FILE=/run/secrets/keycloak_dbpass
+    command: [
+      "-Dkeycloak.migration.action=import",
+      "-Dkeycloak.migration.realmName=onaci",
+      "-Dkeycloak.migration.provider=dir",
+      "-Dkeycloak.migration.dir=/opt/jboss/keycloak/realms",
+      "-Dkeycloak.migration.strategy=OVERWRITE_EXISTING"
+    ]
