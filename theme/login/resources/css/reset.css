@@ -10,9 +10,8 @@
  * realm-light-teal:   #66C6B3 (from logo)
  * realm-dark-lime:    #8CC63F (from logo)
  * realm-light-lime:   #D7DF21 (from logo)
- * realm-blue:   #006CB8 (from logo)
- * realm-red:    #EF3F44 (from logo)
- * realm-gold:   #F5A623 (from site)
+ * realm-blue:   #113a5f
+ * realm-red:    #113a5f
  * thredds-grey:      #EEEEEE (THREDDS hard-codes this: may as well use it.)
  * dashboard-background-grey: #EBEBEB (from dashboard)
  * dashboard-text-grey:       #0A0A0A (from dashboard)
@@ -93,7 +92,7 @@ template,
 }
 
 a {
-  color: #006CB8;   /* realm-blue */
+  color: #113a5f;   /* realm-blue */
   text-decoration: none;
   -webkit-text-decoration-skip: objects;
 }
@@ -504,7 +503,7 @@ legend {
   display: table;
   max-width: 100%;
   white-space: normal;
-  color: #006CB8;  /* realm-blue */
+  color: #113a5f;  /* realm-blue */
   margin-left: -5px;
   padding: 0 5px;
 }

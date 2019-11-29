@@ -22,8 +22,8 @@ body, body > div {
 }
 
 #kc-header {
-  background-color: #424242;
-  border-bottom: 10px solid #EF3F44; /* realm-red */
+  background-color: #113a5f;
+  border-bottom: 10px solid #113a5f; /* realm-red */
   height: 65px;
   margin: 0;
   padding: 0;  
@@ -31,7 +31,7 @@ body, body > div {
 #kc-header-wrapper {
   background: transparent url('../img/logo.png') no-repeat 10px 8px;
   background-size: auto 37.85px;
-  border-bottom: 10px solid #006CB8;  /* realm-blue */
+  border-bottom: 10px solid #113a5f;  /* realm-blue */
   color: #fff;
   height: 65px;
   margin: 0;
@@ -103,7 +103,7 @@ body > div > div:nth-of-type(2){
 }
 
 #kc-form [type="submit"]{
-  background-color: #006CB8;  /* realm-blue */
+  background-color: #113a5f;  /* realm-blue */
   border: 1px solid transparent;
   border-radius: 0;
   color: #fefefe;
