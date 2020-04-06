@@ -1,14 +1,7 @@
-FROM jboss/keycloak:4.5.0.Final
+FROM jboss/keycloak:9.0.2
 
 # Escalate privileges while we alter the image contents.
 USER root
-
-# TODO: Remove this when the keycloak version is upgraded!
-# Monkey-patch the docker-entrypoint script to get the fix for this bug:
-# https://issues.jboss.org/browse/KEYCLOAK-8459
-# (master is already patched, but we don't want to use that and get an unexpected keycloak upgrade)
-COPY ./tools/docker-entrypoint.sh /opt/jboss/tools/docker-entrypoint.sh
-RUN chmod 0755 /opt/jboss/tools/docker-entrypoint.sh
 
 # Add support for reading passwords from secrets files
 COPY ./tools/docker-entrypoint-with-secrets.sh /opt/jboss/tools/docker-entrypoint-with-secrets.sh
